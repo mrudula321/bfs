@@ -1,0 +1,48 @@
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.datasets import imdb
+from keras.preprocessing.text import Tokenizer
+
+#loading the IMDB movie review dataset using Keras
+(x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=10000)
+
+
+# Preprocess the data
+x_train = keras.preprocessing.sequence.pad_sequences(x_train, maxlen=256)
+x_test = keras.preprocessing.sequence.pad_sequences(x_test, maxlen=256)
+
+
+# Define the model architecture
+model = keras.models.Sequential([
+keras.layers.Embedding(10000, 16, input_length=256),
+keras.layers.GlobalAveragePooling1D(),
+keras.layers.Dense(16, activation='relu'),
+keras.layers.Dense(1, activation='sigmoid') ])
+
+
+# Compile the model
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+
+# Train the model
+history = model.fit(x_train, y_train, epochs=30, batch_size=32, validation_data=(x_test, y_test))
+
+
+
+# Evaluate the model's performance
+test_loss, test_acc = model.evaluate(x_test, y_test)
+print('Test accuracy:', test_acc)
+# Prepare the text data
+t = Tokenizer()
+texts = ['This movie is really good!', 'This movie is really bad.']
+t.fit_on_texts(texts)
+sequences = t.texts_to_sequences(texts)
+data = keras.preprocessing.sequence.pad_sequences(sequences, maxlen=256)
+# Predict the sentiment of the input text
+predictions = model.predict(data)
+print(predictions)
+for i in range(len(texts)):
+  print(texts[i] ,'->','Positive' if predictions[i]>0.3 else 'Negative')
+print("Sequence generated :", sequences )
+
+
