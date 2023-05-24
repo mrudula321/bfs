@@ -1,0 +1,153 @@
+#include <iostream>
+#include <vector>
+#include <chrono>
+#include <cstdlib>
+#include <ctime>
+#include <omp.h>
+
+// Sequential Bubble Sort
+void bubbleSort(std::vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; ++i) {
+        for (int j = 0; j < n - i - 1; ++j) {
+            if (arr[j] > arr[j + 1]) {
+                std::swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+}
+
+// Parallel Bubble Sort
+void parallelBubbleSort(std::vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; ++i) {
+        #pragma omp parallel for
+        for (int j = 0; j < n - i - 1; ++j) {
+            if (arr[j] > arr[j + 1]) {
+                #pragma omp critical
+                std::swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+}
+
+// Merge two sorted subarrays
+void merge(std::vector<int>& arr, int left, int mid, int right) {
+    int i, j, k;
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    std::vector<int> L(n1), R(n2);
+
+    for (i = 0; i < n1; ++i)
+        L[i] = arr[left + i];
+    for (j = 0; j < n2; ++j)
+        R[j] = arr[mid + 1 + j];
+
+    i = 0;
+    j = 0;
+    k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            ++i;
+        } else {
+            arr[k] = R[j];
+            ++j;
+        }
+        ++k;
+    }
+
+    while (i < n1) {
+        arr[k] = L[i];
+        ++i;
+        ++k;
+    }
+
+    while (j < n2) {
+        arr[k] = R[j];
+        ++j;
+        ++k;
+    }
+}
+
+// Sequential Merge Sort
+void mergeSort(std::vector<int>& arr, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+
+        merge(arr, left, mid, right);
+    }
+}
+
+// Parallel Merge Sort
+void parallelMergeSort(std::vector<int>& arr, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                parallelMergeSort(arr, left, mid);
+            }
+
+            #pragma omp section
+            {
+                parallelMergeSort(arr, mid + 1, right);
+            }
+        }
+
+        merge(arr, left, mid, right);
+    }
+}
+
+int main() {
+    srand(time(NULL));
+    int size = 10000;
+    std::vector<int> arr(size);
+    for (int i = 0; i < size; ++i) {
+        arr[i] = rand() % 1000;
+    }
+
+    std::vector<int> seqArr = arr;
+    std::vector<int> parArr = arr;
+
+    // Sequential Bubble Sort
+    auto start = std::chrono::high_resolution_clock::now();
+    bubbleSort(seqArr);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> sequentialTime = end - start;
+
+    // Parallel Bubble Sort
+    start = std::chrono::high_resolution_clock::now();
+    parallelBubbleSort(parArr);
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> parallelTime = end - start;
+
+    std::cout << "Sequential Bubble Sort Time: " << sequentialTime.count() << " seconds\n";
+    std::cout << "Parallel Bubble Sort Time: " << parallelTime.count() << " seconds\n";
+
+    seqArr = arr;
+    parArr = arr;
+
+    // Sequential Merge Sort
+    start = std::chrono::high_resolution_clock::now();
+    mergeSort(seqArr, 0, size - 1);
+    end = std::chrono::high_resolution_clock::now();
+    sequentialTime = end - start;
+
+    // Parallel Merge Sort
+    start = std::chrono::high_resolution_clock::now();
+    parallelMergeSort(parArr, 0, size - 1);
+    end = std::chrono::high_resolution_clock::now();
+    parallelTime = end - start;
+
+    std::cout << "Sequential Merge Sort Time: " << sequentialTime.count() << " seconds\n";
+    std::cout << "Parallel Merge Sort Time: " << parallelTime.count() << " seconds\n";
+
+    return 0;
+}
