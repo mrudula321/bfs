@@ -1,0 +1,87 @@
+#include <iostream>
+#include <vector>
+#include <ctime>
+#include <cstdlib>
+#include <omp.h>
+
+using namespace std;
+
+// Function to perform parallel Bubble Sort
+void parallelBubbleSort(vector<int>& arr) {
+int n = arr.size();
+bool sorted = false;
+
+while (!sorted) {
+sorted = true;
+
+// Parallelize the loop for comparing and swapping adjacent elements
+#pragma omp parallel for shared(arr, sorted)
+for (int i = 0; i < n - 1; ++i) {
+if (arr[i] > arr[i + 1]) {
+// Swap adjacent elements if they are in the wrong order
+swap(arr[i], arr[i + 1]);
+sorted = false;
+}
+}
+}
+}
+
+// Function to perform sequential Bubble Sort
+void sequentialBubbleSort(vector<int>& arr) {
+int n = arr.size();
+
+bool sorted = false;
+
+while (!sorted) {
+sorted = true;
+
+for (int i = 0; i < n - 1; ++i) {
+if (arr[i] > arr[i + 1]) {
+// Swap adjacent elements if they are in the wrong order
+swap(arr[i], arr[i + 1]);
+sorted = false;
+}
+}
+}
+}
+
+// Function to generate random numbers
+vector<int> generateRandomNumbers(int size) {
+vector<int> numbers(size);
+srand(time(0));
+
+for (int i = 0; i < size; ++i) {
+numbers[i] = rand() % 100; // Generate random numbers between 0 and 99
+}
+
+return numbers;
+}
+
+int main() {
+int size = 10000; // Size of the array
+
+// Generate random numbers
+
+vector<int> numbers = generateRandomNumbers(size);
+
+// Measure the performance of sequential Bubble Sort
+clock_t startTime = clock();
+sequentialBubbleSort(numbers);
+clock_t endTime = clock();
+double sequentialTime = double(endTime - startTime) / CLOCKS_PER_SEC;
+
+cout << "Sequential Bubble Sort Time: " << sequentialTime << " seconds" << endl;
+
+// Generate a new set of random numbers
+numbers = generateRandomNumbers(size);
+
+// Measure the performance of parallel Bubble Sort
+startTime = clock();
+parallelBubbleSort(numbers);
+endTime = clock();
+double parallelTime = double(endTime - startTime) / CLOCKS_PER_SEC;
+
+cout << "Parallel Bubble Sort Time: " << parallelTime << " seconds" << endl;
+
+return 0;
+}
