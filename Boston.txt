@@ -1,0 +1,46 @@
+# Importing required libraries
+import numpy as np
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+
+df=pd.read_csv("/content/1-boston-housing.csv")
+
+x = df.loc[:, df.columns != 'MEDV']
+y = df.loc[:, df.columns == 'MEDV']
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=123)
+
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+y_train = scaler.fit_transform(y_train)
+y_test = scaler.transform(y_test)
+
+model = tf.keras.Sequential([
+ tf.keras.layers.Dense(64, activation='relu'),
+ tf.keras.layers.Dense(64, activation='relu'),
+ tf.keras.layers.Dense(1)
+])
+
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss='mse')
+
+early_stopping = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=10)
+lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=5)
+
+history = model.fit(x_train, y_train, epochs=10, validation_split=0.05, verbose = 1)
+
+# Evaluate the model
+mse = model.evaluate(x_test, y_test)
+print("MSE: {:.4f}".format(mse))
+
+# Make predictions
+predictions = model.predict(x_test)
+
+# Inverse transform the predictions and targets to get the original housing prices
+predictions = scaler.inverse_transform(predictions)
+y_test = scaler.inverse_transform(y_test)
+
+# Print the first 10 predicted prices
+print("Predicted prices:\n", predictions[:10])
+
